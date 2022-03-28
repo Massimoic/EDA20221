@@ -342,41 +342,41 @@ bool RBtree::eliminarNodo(int dato){
 
     Nodo* ptr1 = toErase;
     Nodo* ptr2 = toErase;
-    int originalColor = toErase->color;
+    int originalColor = toErase->color;     // Guardamos el color original del nodo a eliminar
 
-    if(toErase->left == nullptr) {
-        ptr1 = toErase->right;
+    if(toErase->left == nullptr) {          // Si el hijo izq del nodo es null
+        ptr1 = toErase->right;              // Reemplazar el nodo con el hijo derecho
         swap(toErase, toErase->right);
     }
-    else if(toErase->right == nullptr){
-        ptr1 = toErase->left;
+    else if(toErase->right == nullptr){     // Si el hijo derecho es null
+        ptr1 = toErase->left;               // Reemplazar el nodo con el hijo izquierdo
         swap(toErase, toErase->left);
     }
-    else{
-        ptr2 = minimum(toErase->right);
-        originalColor = ptr2->color;
-        ptr1 = ptr2->right;
-        if(ptr2->father == toErase){
-            ptr1->father = ptr2;
+    else{                                   // Caso 3:
+        ptr2 = minimum(toErase->right);     // Encontramos el minimo del sub-arbol derecho
+        originalColor = ptr2->color;        // Guardamos su color,
+        ptr1 = ptr2->right;                 // ptr1 = hijo derecho de ptr2
+        if(ptr2->father == toErase){        // Si ptr2 es hijo del nodo a eliminar
+            ptr1->father = ptr2;            // ptr1 ahora sera hijo de ptr2
         }
-        else{
-            swap(ptr2, ptr2->right);
-            ptr2->right = toErase->right;
-            ptr2->right->father = ptr2;
+        else{                               // Si no,
+            swap(ptr2, ptr2->right);        // Reemplazamos ptr2 con su hijo derecho
+            ptr2->right = toErase->right;   // Actualizamos hijo derecho de ptr2 al hijo del nodo eliminado
+            ptr2->right->father = ptr2;     // Actualizamos padre del hijo correspondientemente
         }
 
-        swap(toErase, ptr2);
-        ptr2->left = toErase->left;
-        ptr2->left->father = ptr2;
+        swap(toErase, ptr2);                // Actualizamos el nodo con ptr2
+        ptr2->left = toErase->left;         
+        ptr2->left->father = ptr2;          
         ptr2->color = toErase->color;
     }
 
-    delete toErase;
-    if(originalColor == 1){
-        corregirEliminado(ptr1);
+    delete toErase;                         // Eliminamos el nodo flotante
+    if(originalColor == 1){                 // Si es que el color original era NEGRO,
+        corregirEliminado(ptr1);            // Hay que corregir el arbol
     }
 
-    return true;
+    return true;                            // Se pudo eliminar correctamente el nodo
 }
 
 Nodo* RBtree::getRoot(){
