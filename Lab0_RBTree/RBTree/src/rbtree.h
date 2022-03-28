@@ -1,3 +1,5 @@
+#include <vector>
+using namespace std;
 #ifndef RBTREE_H
 #define RBTREE_H
 
@@ -31,9 +33,18 @@ private:
     void rotarIzquierda(Nodo* &);
     void rotarDerecha  (Nodo* &);
 
+    vector<int> traversal;
+
 public:
     RBtree();
     void insertar(int);
+    vector<int> inorden();
+    vector<int> preorden();
+    vector<int> posorden();
+    void inordenHelper(Nodo* nodo);
+    void preordenHelper(Nodo* nodo);
+    void posordenHelper(Nodo* nodo);
+    Nodo* getRoot();
 
     ~RBtree();
 };

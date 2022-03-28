@@ -1,5 +1,7 @@
 #include <algorithm> 
+#include <iostream>
 #include "rbtree.h"
+using namespace std;
 
 Nodo::Nodo(int dato){
     this->dato = dato;
@@ -179,6 +181,52 @@ void RBtree::insertar(int dato){
     Nodo *puntero = new Nodo(dato);
     root = insertarNodo(root,puntero);
     corregirArbol(puntero);
+}
+
+vector<int> RBtree::inorden(){
+    traversal.clear();          // Vaciar vector
+    inordenHelper(this->root);  // Funcion inOrden recursiva
+    return traversal;           // Vector con el camino
+}
+
+void RBtree::inordenHelper(Nodo* nodo){     // Inorder traversal recursivo
+    if(nodo == nullptr) return;             // Si estamos apuntando a un nulo, retornar.
+
+    inordenHelper(nodo->left);              // Explorar todo el sub-arbol izquierdo.
+    traversal.push_back(nodo->dato);        // Agregar al vector
+    inordenHelper(nodo->right);             // Explorar todo el sub-arbol derecho.
+}
+
+vector<int> RBtree::preorden(){
+    traversal.clear();
+    preordenHelper(this->root);
+    return traversal;
+}
+
+void RBtree::preordenHelper(Nodo* nodo){// PreOrder traversal recursivo
+    if(nodo == nullptr) return;         // Si estamos apuntando a un nulo, retornar.
+
+    traversal.push_back(nodo->dato);    // Agregar root al vector
+    preordenHelper(nodo->left);         // Explorar todo el sub-arbol izquierdo
+    preordenHelper(nodo->right);        // Explorar todo el sub-arbol derecho
+}
+
+vector<int> RBtree::posorden(){
+    traversal.clear();          // vaciar el vector
+    posordenHelper(this->root); // funcion posorden recursiva
+    return traversal;           // vector con el camino
+}
+
+void RBtree::posordenHelper(Nodo* nodo){    // PostOrder traversal recursivo
+    if(nodo == nullptr) return;             // Si es nulo, retornar.
+
+    posordenHelper(nodo->left);             // Explorar todo el sub-arbol izquierdo.
+    posordenHelper(nodo->right);            // Explorar todo el sub-arbol derecho.
+    traversal.push_back(nodo->dato);        // Agregar al vector
+}
+
+Nodo* RBtree::getRoot(){
+    return root;
 }
 
 RBtree::RBtree(){
