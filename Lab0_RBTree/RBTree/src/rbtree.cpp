@@ -225,6 +225,160 @@ void RBtree::posordenHelper(Nodo* nodo){    // PostOrder traversal recursivo
     traversal.push_back(nodo->dato);        // Agregar al vector
 }
 
+Nodo* RBtree::search(int num){              // Funcion de busqueda por dato
+    if(num == root->dato) return root;      // Si el elemento a buscar es el root retornarlo.
+    Nodo* ptr = root;
+
+    while(ptr->dato != num){                // Mientras no se haya encontrado el nodo:
+
+        if(ptr->dato < num){                // Si num es mayor al nodo actual, intentar ir a la derecha
+            if(ptr->right == nullptr) break;
+            ptr = ptr->right;
+        }
+        else if(ptr->dato > num){           // Si num es menor al nodo actual, intentar ir a la izquierda
+            if(ptr->left == nullptr) break;
+            ptr = ptr->left;
+        }
+
+    }
+
+    if(ptr->dato == num) return ptr;        // Si se encontro el nodo, retornar
+    else return nullptr;                    // Si no, dar null
+}
+
+Nodo* RBtree::minimum(Nodo* ptr){
+    while(ptr->left != nullptr){
+        ptr = ptr->left;
+    }
+    return ptr;
+}
+
+Nodo* RBtree::maximum(Nodo* ptr){
+    while(ptr->right != nullptr){
+        ptr = ptr->right;
+    }
+    return ptr;
+}
+
+void RBtree::swap(Nodo* n1, Nodo* n2){  // funcion auxiliar para cambiar nodos
+    if(n1 == root) root = n2;
+    else if(n1 == n1->father->left){    // n1 es un hijo izq?
+        n1->father->left = n2;          // cambiar el hijo por n2
+    }
+    else{                               // n1 es un hijo derecho?
+        n1->father->right = n2;         // cambiar el hijo por n2
+    }
+
+    n2->father = n1->father;
+}
+
+void RBtree::corregirEliminado(Nodo* nodo){
+    Nodo* aux = nodo;
+    while(nodo != root && nodo->color == BLACK){
+        if(nodo == nodo->father->left){
+            aux = nodo->father->right;
+            if(aux->color == RED){
+                aux->color = BLACK;
+                nodo->father->color = RED;
+                rotarIzquierda(nodo->father);
+                aux = nodo->father->right;
+            }
+
+            if(aux->left->color == BLACK && aux->right->color == BLACK){
+                aux->color = RED;
+                nodo = nodo->father;
+            }
+            else {
+                if(aux->right->color == BLACK){
+                    aux->left->color = BLACK;
+                    aux->color = RED;
+                    rotarDerecha(aux);
+                    aux = nodo->father->right;
+                }
+
+                aux->color = nodo->father->color;
+                nodo->father->color = BLACK;
+                aux->right->color = BLACK;
+                rotarIzquierda(nodo->father);
+                nodo = root;
+            }
+        }
+
+        else{
+            aux = nodo->father->left;
+            if(aux->color == RED){
+                aux->color = BLACK;
+                nodo->father->color = RED;
+                rotarDerecha(nodo->father);
+                aux = nodo->father->left;
+            }
+
+            if(aux->right->color == BLACK && aux->right->color == BLACK){
+                aux->color = RED;
+                nodo = nodo->father;
+            }
+            else{
+                if(aux->left->color == BLACK){
+                    aux->right->color = BLACK;
+                    aux->color = RED;
+                    rotarIzquierda(aux);
+                    aux = nodo->father->left;
+                }
+
+                aux->color = nodo->father->color;
+                nodo->father->color = BLACK;
+                aux->left->color = BLACK;
+                rotarDerecha(nodo->father);
+                nodo = root;
+            }
+        }
+    }
+    nodo->color = BLACK;
+}
+
+bool RBtree::eliminarNodo(int dato){
+    Nodo* toErase = search(dato);           // Localizacion del puntero en el nodo.
+    if(toErase == nullptr) return false;    // No existe el nodo a eliminar.
+
+    Nodo* ptr1 = toErase;
+    Nodo* ptr2 = toErase;
+    int originalColor = toErase->color;
+
+    if(toErase->left == nullptr) {
+        ptr1 = toErase->right;
+        swap(toErase, toErase->right);
+    }
+    else if(toErase->right == nullptr){
+        ptr1 = toErase->left;
+        swap(toErase, toErase->left);
+    }
+    else{
+        ptr2 = minimum(toErase->right);
+        originalColor = ptr2->color;
+        ptr1 = ptr2->right;
+        if(ptr2->father == toErase){
+            ptr1->father = ptr2;
+        }
+        else{
+            swap(ptr2, ptr2->right);
+            ptr2->right = toErase->right;
+            ptr2->right->father = ptr2;
+        }
+
+        swap(toErase, ptr2);
+        ptr2->left = toErase->left;
+        ptr2->left->father = ptr2;
+        ptr2->color = toErase->color;
+    }
+
+    delete toErase;
+    if(originalColor == 1){
+        corregirEliminado(ptr1);
+    }
+
+    return true;
+}
+
 Nodo* RBtree::getRoot(){
     return root;
 }

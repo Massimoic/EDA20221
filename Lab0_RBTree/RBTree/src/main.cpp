@@ -17,21 +17,27 @@ int main(){
     test->insertar(15);
     test->insertar(10);
 
-    vector<int> v1 = test->inorden();
-    vector<int> v2 = test->preorden();
-    vector<int> v3 = test->posorden();
+    // vector<int> v1 = test->inorden();
+    // vector<int> v2 = test->preorden();
+    // vector<int> v3 = test->posorden();
 
-    for(auto a : v1){
-        cout << a << "-> ";
-    }
-    cout << endl;
-    for(auto a : v2){
-        cout << a << "-> ";
-    }
-    cout << endl;
-    for(auto a : v3){
-        cout << a << "-> ";
-    }
+    // for(auto a : v1){
+    //     cout << a << "-> ";
+    // }
+    // cout << endl;
+    // for(auto a : v2){
+    //     cout << a << "-> ";
+    // }
+    // cout << endl;
+    // for(auto a : v3){
+    //     cout << a << "-> ";
+    // }
+
+    auto nod = test->search(9);
+    cout << nod->dato;
+    test->eliminarNodo(9);
+    nod = test->search(10);
+    cout << "\n" << nod->dato;
 
     return 0;
 }

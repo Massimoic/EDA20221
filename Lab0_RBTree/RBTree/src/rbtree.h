@@ -34,6 +34,9 @@ private:
     void rotarDerecha  (Nodo* &);
 
     vector<int> traversal;
+    void swap(Nodo* nodo1, Nodo* nodo2);
+
+    void corregirEliminado(Nodo* nodo);
 
 public:
     RBtree();
@@ -44,7 +47,11 @@ public:
     void inordenHelper(Nodo* nodo);
     void preordenHelper(Nodo* nodo);
     void posordenHelper(Nodo* nodo);
+    Nodo* search(int);
     Nodo* getRoot();
+    bool eliminarNodo(int);
+    Nodo* minimum(Nodo* nodo);
+    Nodo* maximum(Nodo* nodo);
 
     ~RBtree();
 };
