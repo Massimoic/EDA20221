@@ -1,26 +1,40 @@
 #include <vector>
 using namespace std;
-#ifndef BPLUSTREE_H
-#define BPLUSTREE_H
+#ifndef BplusTree_H
+#define BplusTree_H
 
 struct Node{
     // Atributos
-    int data;
+    int *key;
+    int size;
+    bool isLeaf;
 
-    // Relacion con otros Nodes
-    Node *left;
-    Node *right;
-    Node *parent;
+    // Relacion con otros Nodos
+    Node** ptr;
 
     // Constructor
-    Node(int);
+    Node();
 };
 
-class BPlusTree{
+class BplusTree{
     private:
     Node *root;
-    Node *insertNode(Node* &, Node* &);
-}
+    int order;       // orden del arbol (m)
+    int maxKeys;     // maximo numero de keys en un nodo
+    void insertInternalNode(int, Node*, Node*);
+    Node* getParent(Node*, Node*);
+
+    public:
+    BplusTree();
+    Node* getRoot();
+    void display(Node*);
+    void search(int);
+    void insertar(int);
+    void borrar(int);
+    
+
+    ~BplusTree();
+};
 
 
 
