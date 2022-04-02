@@ -19,8 +19,7 @@ struct Node{
 class BplusTree{
     private:
     Node *root;
-    int order;       // orden del arbol (m)
-    int maxKeys;     // maximo numero de keys en un nodo
+    int degree;       // orden del arbol, no se usa.
     void insertInternalNode(int, Node*, Node*);
     Node* getParent(Node*, Node*);
 

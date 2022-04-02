@@ -2,11 +2,11 @@
 #include <iostream>
 #include "BplusTree.h"
 using namespace std;
-const int MAX = 20;
+const int capacity = 20;
 
 Node::Node(){
-    key = new int[MAX];
-    ptr = new Node*[MAX+1];
+    key = new int[capacity];
+    ptr = new Node*[capacity+1];
 }
 
 Node* BplusTree::getRoot(){
@@ -34,7 +34,7 @@ void BplusTree::insertar(int data){
 
             for(int i = 0 ; i < temp->size ; i++){
 
-                // Si encontramos la posicion, insertar.
+                // Si encontramos la posicion donde insertar
                 if(data < temp->key[i]){
                     temp = temp->ptr[i];
                     break;
@@ -47,7 +47,7 @@ void BplusTree::insertar(int data){
             }
         }
 
-        if(temp->size < MAX) {  // Hay espacio para insertar
+        if(temp->size < capacity) {  // Hay espacio para insertar
             int i = 0;
             // localizar el indice donde insertar
             while(data > temp->key[i] && i < temp->size) i++;
@@ -68,32 +68,33 @@ void BplusTree::insertar(int data){
         else{
             Node* nuevo = new Node;
 
-            int auxNode[MAX];
+            int auxNode[capacity+1];
 
             // lleno el nodo auxiliar con los valores del nodo a separar
-            for(int i = 0 ; i < MAX; i++){
+            for(int i = 0 ; i < capacity; i++){
                 auxNode[i] = temp->key[i];
             }
             int i = 0;
             int x = 0;
 
-            while(data > auxNode[i] && i < MAX) i++;
-            for(int x = MAX + 1 ; x > i ; x--){
+            while(data > auxNode[i] && i < capacity) i++;
+
+            for(int x = capacity + 1 ; x > i ; x--){
                 auxNode[x] = auxNode[x-1];
             }
 
             auxNode[i] = data;
             nuevo->isLeaf = true;
 
-            temp->size = (MAX+1)/2;
-            nuevo->size = MAX + 1 - (MAX+1)/2;
-            // (MAX+1)/2 -> 21/2            = 10
-            // MAX+1 - (MAX+1)/2 -> 21 - 10 = 11
+            temp->size = (capacity+1)/2;
+            nuevo->size = capacity + 1 - (capacity+1)/2;
+            // (capacity+1)/2 -> 21/2            = 10
+            // capacity+1 - (capacity+1)/2 -> 21 - 10 = 11
             // temp -> size > nuevo -> size
 
             temp->ptr[temp->size] = nuevo;
-            nuevo->ptr[nuevo->size] = temp->ptr[MAX];
-            temp->ptr[MAX] = nullptr;
+            nuevo->ptr[nuevo->size] = temp->ptr[capacity];
+            temp->ptr[capacity] = nullptr;
 
             // actualizar nodo original con primera parte de los valores
             for(i = 0 ; i < temp->size ; i++){
@@ -129,7 +130,7 @@ void BplusTree::insertar(int data){
 void BplusTree::insertInternalNode(int data, Node* temp, Node* child){
 
     // No overflow
-    if(temp->size < MAX){
+    if(temp->size < capacity){
         int i = 0;
 
         while(data > temp->key[i] && i < temp->size) i++;
@@ -152,41 +153,41 @@ void BplusTree::insertInternalNode(int data, Node* temp, Node* child){
 
         // Crear nuevo nodo interno.
         Node* nuevoInterno = new Node;
-        int auxKeys[MAX+1];
-        Node* auxPtrs[MAX+2];
+        int auxKeys[capacity+1];
+        Node* auxPtrs[capacity+2];
 
         // Guardar lista de datos en auxKeys.
-        for(int i = 0; i < MAX; i++){
+        for(int i = 0; i < capacity; i++){
             auxKeys[i] = temp->key[i];
         }
 
         // Guardar punteros del nodo en auxPtrs.
-        for(int i = 0 ; i < MAX + 1; i++){
+        for(int i = 0 ; i < capacity + 1; i++){
             auxPtrs[i] = temp->ptr[i];
         }
 
         int i = 0;
-        int x = 0;
 
         // Localizar donde insertar nuevo nodo.
-        while( data > auxKeys[i] && i < MAX) i++;
+        while( data > auxKeys[i] && i < capacity) i++;
 
-        for(int x = MAX + 1; x > i ; x--){
+        for(int x = capacity + 1; x > i ; x--){
             auxKeys[x] = auxKeys[x-1];
         }
 
         auxKeys[i] = data;
 
-        for(int x = MAX + 2; x > i+1 ; x--){
+        for(int x = capacity + 2; x > i+1 ; x--){
             auxPtrs[x] = auxPtrs[x-1];
         }
 
         auxPtrs[i+1] = child;
         nuevoInterno->isLeaf = false;
 
-        temp->size = (MAX + 1)/2;
-        nuevoInterno->size = MAX - (MAX + 1)/2;
+        temp->size = (capacity + 1)/2;
+        nuevoInterno->size = capacity - (capacity + 1)/2;
 
+        int x;
         for(i = 0, x = temp->size+1 ; i < nuevoInterno->size; i++,x++){
             nuevoInterno->key[i] = auxKeys[x];
         }
@@ -238,9 +239,61 @@ BplusTree::BplusTree(){
     //int m = 21;
     root = nullptr;
     //this->order = m;
-    //maxKeys = order-1;
+    //capacityKeys = order-1;
 }
 
 BplusTree::~BplusTree(){
 
+}
+
+void BplusTree::search(int x)
+{
+
+	// If tree is empty
+	if (root == NULL) {
+		cout << "Tree is empty\n";
+	}
+
+	// Traverse to find the value
+	else {
+
+		Node* cursor = root;
+
+		// Till we reach leaf node
+		while (cursor->isLeaf == false) {
+
+			for (int i = 0;
+				i < cursor->size; i++) {
+
+				// If the element to be
+				// found is not present
+				if (x < cursor->key[i]) {
+					cursor = cursor->ptr[i];
+					break;
+				}
+
+				// If reaches end of the
+				// cursor node
+				if (i == cursor->size - 1) {
+					cursor = cursor->ptr[i + 1];
+					break;
+				}
+			}
+		}
+
+		// Traverse the cursor and find
+		// the node with value x
+		for (int i = 0;
+			i < cursor->size; i++) {
+
+			// If found then return
+			if (cursor->key[i] == x) {
+				cout << "Found\n";
+				return;
+			}
+		}
+
+		// Else element is not present
+		cout << "Not found\n";
+	}
 }
