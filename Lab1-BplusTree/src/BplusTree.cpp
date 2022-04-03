@@ -1,299 +1,198 @@
+#include "BplusTree.h"
+
 #include <algorithm>
 #include <iostream>
-#include "BplusTree.h"
+#include <queue>
+
 using namespace std;
-const int capacity = 20;
 
-Node::Node(){
-    key = new int[capacity];
-    ptr = new Node*[capacity+1];
+size_t insertHelper(vector<int> &keys, int value){
+
+    if(keys.empty()){
+        keys.push_back(value);
+        return 0;
+    }
+
+    auto temp = keys.begin();
+    while(value > *temp && temp != keys.end()) temp++;
+
+    auto dist = distance(keys.begin(), temp);
+    keys.insert(temp, value);
+
+    return dist;
 }
 
-Node* BplusTree::getRoot(){
-    return this->root;
-}
-
-void BplusTree::insertar(int data){
-    // Si root es null, crear nodo y terminar.
+void BplusTree::insertar(int value){
+    
+    // Si no existe el root, arbol vacio, solo insertar elemento y asignar como root.
     if(root == nullptr){
         root = new Node();
-        root->key[0] = data;
-        root->isLeaf = true;
-        root->size = 1;
+        root->keys.push_back(value);
+        return;
     }
 
-    // Si no, localizar la insercion
-    else{
-        Node* temp = root;
-        Node* parent;
+    // Localizar lugar de insercion.
+    auto cursor = root;
+    bool aux;
 
-        // Hasta llegar a un nodo hoja.
-        // Las inserciones siempre se realizan en nodos hoja.
-        while(temp->isLeaf == false){
-            parent = temp;
+    while(cursor && cursor->isLeaf==false){
+        aux = false;
 
-            for(int i = 0 ; i < temp->size ; i++){
+        // Si es menor, ir al hijo izquierdo.
+        if(value <= cursor->keys.front()){
+            cursor = cursor->children[0];
+            continue;
+        }
 
-                // Si encontramos la posicion donde insertar
-                if(data < temp->key[i]){
-                    temp = temp->ptr[i];
-                    break;
-                }
+        for(int i = 0 ; i < cursor->keys.size()-1 ; i++){
 
-                if(i == temp->size-1){
-                    temp = temp->ptr[i+1];
-                    break;
-                }
+            if(value > cursor->keys[i] && value <= cursor->keys[i+1]) {
+                cursor = cursor->children[i+1];
+                aux = true;
+                break;
             }
         }
 
-        if(temp->size < capacity) {  // Hay espacio para insertar
-            int i = 0;
-            // localizar el indice donde insertar
-            while(data > temp->key[i] && i < temp->size) i++;
+        if(!aux && value > cursor->keys.back()) cursor = cursor->children.back();
+    }
 
-            // si se inserta al medio, correr los mayores a la derecha.
-            for(int x = temp->size; x > i ; x--){
-                temp->key[x] = temp->key[x-1];
-            }
+    // Hay espacio para insertar:
+    if(cursor->keys.size() < capacity){
+        insertHelper(cursor->keys, value);
+        return;
+    }
 
-            // actualizar posicion con el nuevo dato.
-            temp->key[i] = data;
-            temp->size++;
+    // No hay espacio, hacer split
+    split(cursor, value);
+}
 
-            temp->ptr[temp->size] = temp->ptr[temp->size-1];
-            temp->ptr[temp->size-1] = nullptr;
+void BplusTree::split(Node* node, int value){
+
+    // Calcular el medio
+    insertHelper(node->keys, value);
+    int mid = int(node->keys.size() / 2);
+    auto midKey = node->keys[mid];
+
+    if(node->parent == nullptr){
+        // Si no tiene padre, crear nuevo nodo padre.
+        node->parent = new Node(false);
+        root = node->parent;
+        node->parent->children.push_back(node);
+    }
+
+    // Padre existe y tiene espacio:
+    // Insertar y separar nodo
+
+    if(node->parent->keys.size() < capacity){
+        auto index = insertHelper(node->parent->keys, midKey);
+        auto brother = newBrother(node, midKey);
+
+        if(index+1 >= node->parent->children.size()) {
+            node->parent->children.push_back(brother);
         }
 
         else{
-            Node* nuevo = new Node;
-
-            int auxNode[capacity+1];
-
-            // lleno el nodo auxiliar con los valores del nodo a separar
-            for(int i = 0 ; i < capacity; i++){
-                auxNode[i] = temp->key[i];
-            }
-            int i = 0;
-            int x = 0;
-
-            while(data > auxNode[i] && i < capacity) i++;
-
-            for(int x = capacity + 1 ; x > i ; x--){
-                auxNode[x] = auxNode[x-1];
-            }
-
-            auxNode[i] = data;
-            nuevo->isLeaf = true;
-
-            temp->size = (capacity+1)/2;
-            nuevo->size = capacity + 1 - (capacity+1)/2;
-            // (capacity+1)/2 -> 21/2            = 10
-            // capacity+1 - (capacity+1)/2 -> 21 - 10 = 11
-            // temp -> size > nuevo -> size
-
-            temp->ptr[temp->size] = nuevo;
-            nuevo->ptr[nuevo->size] = temp->ptr[capacity];
-            temp->ptr[capacity] = nullptr;
-
-            // actualizar nodo original con primera parte de los valores
-            for(i = 0 ; i < temp->size ; i++){
-                temp->key[i] = auxNode[i];
-            }
-
-            // actualizar nuevo nodo con segunda parte de los valores
-            for(i = 0, x = temp->size ; i < nuevo->size; i++, x++){
-                nuevo->key[i] = auxNode[x];
-            }
-
-            // Si es que el nodo separado es el root,
-            // Debemos actualizar root.
-            if(temp == root){
-                Node* updatedRoot = new Node;
-
-                updatedRoot->key[0] = nuevo->key[0];
-                updatedRoot->ptr[0] = temp;
-                updatedRoot->ptr[1] = nuevo;
-                updatedRoot->isLeaf = false;
-                updatedRoot->size = 1;
-                root = updatedRoot;
-            }
-
-            // Si no es, llamar a funcion para insertar nodo interno.
-            else{
-                insertInternalNode(nuevo->key[0], parent, nuevo);
-            }
+            node->parent->children.insert(node->parent->children.begin() + index + 1 , brother);
         }
     }
-}
 
-void BplusTree::insertInternalNode(int data, Node* temp, Node* child){
+    // Padre existe no hay espacio:
+    // Separar nodo, separar padre
 
-    // No overflow
-    if(temp->size < capacity){
+    else{
+        auto brother = newBrother(node, midKey);
         int i = 0;
 
-        while(data > temp->key[i] && i < temp->size) i++;
+        // iterar padre y encontrar indice del nuevo hijo
+        while(i < node->parent->children.size() && node->parent->children[i] != node) i++;
 
-        for(int j = temp->size; j > i ; j--){
-            temp->key[j] = temp->key[j-1];
+        // Insertar nodo hermano
+        if(i + 1 >= node->parent->children.size()){
+            node->parent->children.push_back(brother);
+        }
+        else{
+            node->parent->children.insert(node->parent->children.begin() + i + 1, brother);
         }
 
-        for(int j = temp->size + 1; j > i + 1 ; j--){
-            temp->ptr[j] = temp->ptr[j-1];
-        }
-
-        temp->key[i] = data;
-        temp->size++;
-        temp->ptr[i+1] = child;
+        // Separar al padre
+        split(node->parent, midKey);
     }
 
-    // Overflow -> split
-    else{
+}
 
-        // Crear nuevo nodo interno.
-        Node* nuevoInterno = new Node;
-        int auxKeys[capacity+1];
-        Node* auxPtrs[capacity+2];
+Node* BplusTree::newBrother(Node* node, int midKey){
+    auto brother = new Node(node->isLeaf);
+    
+    // Copy keys
 
-        // Guardar lista de datos en auxKeys.
-        for(int i = 0; i < capacity; i++){
-            auxKeys[i] = temp->key[i];
+    auto it = node->keys.begin();
+    while(it != node->keys.end()){
+        if(*it == midKey){
+            if(node->isLeaf) { // Solo copiar dato a subir si es nodo hoja
+                brother->keys.push_back(*it);
+            }
+            node->keys.erase(it);
         }
 
-        // Guardar punteros del nodo en auxPtrs.
-        for(int i = 0 ; i < capacity + 1; i++){
-            auxPtrs[i] = temp->ptr[i];
+        else if(*it > midKey){
+            brother->keys.push_back(*it);
+            node->keys.erase(it);
         }
 
+        else{
+            it++;
+        }
+    }
+
+    // Copy children
+
+    if(node->isLeaf == false){
         int i = 0;
-
-        // Localizar donde insertar nuevo nodo.
-        while( data > auxKeys[i] && i < capacity) i++;
-
-        for(int x = capacity + 1; x > i ; x--){
-            auxKeys[x] = auxKeys[x-1];
-        }
-
-        auxKeys[i] = data;
-
-        for(int x = capacity + 2; x > i+1 ; x--){
-            auxPtrs[x] = auxPtrs[x-1];
-        }
-
-        auxPtrs[i+1] = child;
-        nuevoInterno->isLeaf = false;
-
-        temp->size = (capacity + 1)/2;
-        nuevoInterno->size = capacity - (capacity + 1)/2;
-
-        int x;
-        for(i = 0, x = temp->size+1 ; i < nuevoInterno->size; i++,x++){
-            nuevoInterno->key[i] = auxKeys[x];
-        }
-
-        for(i = 0, x = temp->size+1 ; i < nuevoInterno->size + 1; i++, x++){
-            nuevoInterno->ptr[i] = auxPtrs[x];
-        }
-
-        if(temp==root){
-            Node* updatedRoot = new Node;
-
-            updatedRoot->key[0] = temp->key[temp->size];
-
-            updatedRoot->ptr[0] = temp;
-            updatedRoot->ptr[1] = nuevoInterno;
-            updatedRoot->isLeaf = false;
-            updatedRoot->size = 1;
-            root = updatedRoot;
-        }
-        else{
-            insertInternalNode(temp->key[temp->size], getParent(root,temp), nuevoInterno);
-        }
-
-    }
-}
-
-Node* BplusTree::getParent(Node* pointer, Node* child){
-    Node* parent;
-
-    if( pointer->isLeaf || (pointer->ptr[0])->isLeaf) return nullptr;
-
-    for(int i = 0 ; i < pointer->size + 1 ; i++){
-        
-        if(pointer->ptr[i] == child){
-            parent = pointer;
-            return parent;
-        }
-        else{
-            parent = getParent(pointer->ptr[i], child);
-
-            if(parent != nullptr) return parent;
+        while(i <= node->keys.size()) i++;
+        while(i < node->children.size()){
+            node->children[i]->parent = brother;
+            brother->children.push_back(node->children[i]);
+            node->children.erase(node->children.begin() + i);
         }
     }
 
-    return parent;
+    // Si es un nodo hoja, actualizar links al siguiente
+
+    if(node->isLeaf == true){
+        auto ptr = node->ptr;
+        node->ptr = brother;
+        brother->ptr = ptr;
+    }
+
+    // Asignar padre
+
+    brother->parent = node->parent;
+    return brother;
 }
 
-BplusTree::BplusTree(){
-    //int m = 21;
-    root = nullptr;
-    //this->order = m;
-    //capacityKeys = order-1;
+vector<int> BplusTree::bfs(){
+
+    queue<Node*> queue;
+    vector<int> vec;
+    if(root == nullptr) return vec;
+    queue.push(root);
+
+    while(!queue.empty()){
+        auto node = queue.front();
+        queue.pop();
+
+        for(auto value : node->keys){
+            vec.push_back(value);
+        }
+
+        for(auto child : node->children){
+            queue.push(child);
+        }
+    }
+
+    return vec;
 }
 
 BplusTree::~BplusTree(){
 
-}
-
-void BplusTree::search(int x)
-{
-
-	// If tree is empty
-	if (root == NULL) {
-		cout << "Tree is empty\n";
-	}
-
-	// Traverse to find the value
-	else {
-
-		Node* cursor = root;
-
-		// Till we reach leaf node
-		while (cursor->isLeaf == false) {
-
-			for (int i = 0;
-				i < cursor->size; i++) {
-
-				// If the element to be
-				// found is not present
-				if (x < cursor->key[i]) {
-					cursor = cursor->ptr[i];
-					break;
-				}
-
-				// If reaches end of the
-				// cursor node
-				if (i == cursor->size - 1) {
-					cursor = cursor->ptr[i + 1];
-					break;
-				}
-			}
-		}
-
-		// Traverse the cursor and find
-		// the node with value x
-		for (int i = 0;
-			i < cursor->size; i++) {
-
-			// If found then return
-			if (cursor->key[i] == x) {
-				cout << "Found\n";
-				return;
-			}
-		}
-
-		// Else element is not present
-		cout << "Not found\n";
-	}
 }

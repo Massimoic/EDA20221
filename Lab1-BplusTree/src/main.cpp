@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include "BplusTree.h"
 #include "BplusTree.cpp"
 #include <fstream>
@@ -35,9 +36,14 @@ int main(){
         // Calcular tiempo
         auto tiempo = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
         tiempoInseccion += tiempo;
+
+        auto bfs = tree->bfs();
+        for(auto item : bfs){
+            cout << item << " ";
+        }
     }
 
-    cout << tiempoInseccion << endl;
+    cout << endl << tiempoInseccion << endl;
 
     // Test Video:
 
@@ -49,7 +55,10 @@ int main(){
     //     tree->insertar(data[i]);
     // }
 
-    // tree->search(42);
+    // vector<int> vec = tree->bfs();
+    // for(auto a : vec){
+    //     cout << a << " ";
+    // }
 
     return 0;
 }

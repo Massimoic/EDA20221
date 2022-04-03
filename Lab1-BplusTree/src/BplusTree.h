@@ -1,40 +1,42 @@
-#include <vector>
-using namespace std;
 #ifndef BplusTree_H
 #define BplusTree_H
 
+#include <vector>
+using namespace std;
+
 struct Node{
     // Atributos
-    int *key;
-    int size;
-    bool isLeaf;
+    bool isLeaf = true;
+    vector<int> keys;       // Data
+    vector<Node*> children; // Hijos
+    Node* ptr = nullptr;    // Link a la siguiente hoja
+    Node* parent = nullptr;
 
-    // Relacion con otros Nodos
-    Node** ptr;
-
-    // Constructor
-    Node();
+    // Constructores
+    Node() = default;
+    Node(bool leaf){
+        this->isLeaf = leaf;
+    }
 };
 
 class BplusTree{
     private:
-    Node *root;
-    int degree;       // orden del arbol, no se usa.
-    void insertInternalNode(int, Node*, Node*);
-    Node* getParent(Node*, Node*);
+    // Atributos
+    Node* root = nullptr;
+    int capacity = 20;
+    
+    // Funciones privadas
+    Node* newBrother(Node*, int);
+    void split(Node*, int);
 
+    // Funciones publicas
     public:
-    BplusTree();
-    Node* getRoot();
-    void display(Node*);
-    void search(int);
+    BplusTree() = default;
+    ~BplusTree();
+
     void insertar(int);
     void borrar(int);
-    
-
-    ~BplusTree();
+    vector<int> bfs();
 };
-
-
 
 #endif
