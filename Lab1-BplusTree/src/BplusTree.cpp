@@ -194,5 +194,14 @@ vector<int> BplusTree::bfs(){
 }
 
 BplusTree::~BplusTree(){
+    queue<Node*> q;
+    q.push(root);
 
+    while(!q.empty()){
+        auto cursor = q.front(); q.pop();
+
+        for(auto child : cursor->children) q.push(child);
+
+        delete cursor;
+    }
 }

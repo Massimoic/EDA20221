@@ -36,11 +36,6 @@ int main(){
         // Calcular tiempo
         auto tiempo = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
         tiempoInseccion += tiempo;
-
-        auto bfs = tree->bfs();
-        for(auto item : bfs){
-            cout << item << " ";
-        }
     }
 
     cout << endl << tiempoInseccion << endl;
