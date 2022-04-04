@@ -23,7 +23,7 @@ class BplusTree{
     private:
     // Atributos
     Node* root = nullptr;
-    int capacity = 20;
+    int capacity = 20;  // maximos valores en un nodo
     
     // Funciones privadas
     Node* newBrother(Node*, int);

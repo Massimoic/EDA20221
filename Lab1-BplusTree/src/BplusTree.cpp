@@ -205,3 +205,47 @@ BplusTree::~BplusTree(){
         delete cursor;
     }
 }
+
+void BplusTree::borrar(int key){
+
+    if(root == nullptr) return;
+
+    // Comenzar en root e ir al nodo hoja con el key
+    Node* cur = root;
+    Node* internalNode = nullptr;
+    int index = 0;
+
+    // Encontrar valor en nodo hoja
+    while(cur->isLeaf == false){
+        
+        for(index = 0 ; index < cur->keys.size(); index++){
+            if(key < cur->keys[index]) break;
+            else if(key == cur->keys[index]) internalNode = cur; // Si se encuentra el nodo interno con el valor
+        }
+
+        cur = cur->children[index];
+    }
+    
+    // Encontrar posicion en nodo hoja
+    for(index = 0 ; index < cur->keys.size() ; index++){
+        if(key == cur->keys[index]) break;
+    }
+
+    // No se encontro el key
+    if(index = cur->keys.size()) return;
+
+    // Borrar en el nodo hoja
+    cur->keys.erase(cur->keys.begin() + index);
+
+    // Chequear si solo esta en el root
+    if(cur == root){
+        // Si es el ultimo valor, actualizar root a NULL
+        if(root->keys.empty()) root = nullptr;
+        return;
+    }
+
+    Node* brother;
+
+
+
+}

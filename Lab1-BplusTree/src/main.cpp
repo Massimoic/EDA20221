@@ -1,10 +1,11 @@
+#include "BplusTree.h"
+
 #include <iostream>
 #include <vector>
-#include "BplusTree.h"
-#include "BplusTree.cpp"
 #include <fstream>
 #include <chrono>
 #include <string>
+
 using namespace std;
 
 int main(){
