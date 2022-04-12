@@ -39,10 +39,10 @@ class BplusTree{
     
     // Funciones privadas (funciones de soporte)
     void split(Node*, int); // Separar nodo en 2
-    void mergeNodes(Node* left, Node* right); // Merge de nodos
+    bool mergeNodes(Node* left, Node* right); // Merge de nodos
     Node* newBrother(Node*, int); // Crear nuevo nodo hoja hermano
     keyDir findSibling(Node* node); // Localizar nodo hermano para prestar
-    void deleteInternal(keyDir direction); // Eliminar nodo interno
+    void deleteInternal(int key); // Eliminar nodo interno
     void arreglar(Node* node); // Funcion recursiva para arreglar nodos que no cumplan reglas
 
     // Funciones publicas

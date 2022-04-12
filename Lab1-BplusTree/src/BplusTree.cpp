@@ -223,21 +223,16 @@ void BplusTree::borrar(int key){
     if(root == nullptr) return;
 
     auto cursor = root;
-    Node* intNode = nullptr;
-    int intNodeidx;
+    bool flagInternalNode = false;
 
     // Localizar el Nodo
-    while(cursor && !cursor->isLeaf){
+    while(cursor && cursor->isLeaf == false){
         int i;
 
         for(i = 0 ; i < cursor->keys.size() ; ++i){
             if(key < cursor->keys[i]) break;
 
-            // Si se encuentra el key, guardar nodo e indice
-            else if(key == cursor->keys[i]) {
-            intNode = cursor;
-            intNodeidx = i;
-            }
+            else if(key == cursor->keys[i]) flagInternalNode = true;
         }
 
         cursor = cursor->children[i];
@@ -272,7 +267,7 @@ void BplusTree::borrar(int key){
     // Si el nodo aun cumple con reglas, terminar
     if(cursor->keys.size() >= minKeys) {
         // Si es que encontramos nodo interno, eliminarlo
-        if(intNode != nullptr) deleteInternal({intNode, intNodeidx});
+        if(flagInternalNode) deleteInternal(key);
         return;
     }
 
@@ -289,42 +284,48 @@ void BplusTree::borrar(int key){
             // Izq, se inserta al comienzo
             if(sibling.direction == LEFT){
                 cursor->keys.insert(cursor->keys.begin(), sibling.node->keys[sibling.idx]);
+                sibling.node->keys.erase(sibling.node->keys.begin() + sibling.idx);
+                int index = 0;
+                while(index < sibling.node->parent->children.size() && sibling.node->parent->children[index] != sibling.node) index++;
+                cursor->parent->keys[index-1] = cursor->keys.front();
             }
 
             // Derecha, se inserta al final
             else {
                 cursor->keys.push_back(sibling.node->keys[sibling.idx]);
+                sibling.node->keys.erase(sibling.node->keys.begin() + sibling.idx);
+                int index = 0;
+                while(index < sibling.node->parent->children.size() && sibling.node->parent->children[index] != sibling.node) index++;
+                cursor->parent->keys[index-1] = cursor->keys.front();
             }
 
-            // Eliminar key en el hermano
-            sibling.node->keys.erase(sibling.node->keys.begin() + sibling.idx);
-
-            // Agregar key al nodo padre
-            insertHelper(cursor->parent->keys, sibling.node->keys[int(sibling.node->keys.size()/2)]);
-            if(intNode) deleteInternal({intNode, intNodeidx});
-            return;
+            if(flagInternalNode) deleteInternal(key);
         }
 
         // Si no puede prestar realizar un merge de nodos
 
         else{
-            if(sibling.direction == LEFT) mergeNodes(sibling.node, cursor);
-            else mergeNodes(cursor, sibling.node);
+            bool flagRoot;
+            if(sibling.direction == LEFT){
+                flagRoot = mergeNodes(sibling.node, cursor);
+                cursor = sibling.node;
+            }
+            else flagRoot = mergeNodes(cursor, sibling.node);
+            if(flagRoot) return;
         }
     }
 
     // Arreglar el arbol
 
     arreglar(cursor->parent);
-
-    if(intNode) deleteInternal({intNode, intNodeidx});
+    if(flagInternalNode) deleteInternal(key);
 }
 
-void BplusTree::mergeNodes(Node* left, Node* right){
+bool BplusTree::mergeNodes(Node* left, Node* right){
 
     // Si no tienen padre o el padre no es el mismo, terminar
-    if(!left->parent || !right->parent) return;
-    if(left->parent != right->parent) return;
+    if(!left->parent || !right->parent) return false;
+    if(left->parent != right->parent) return false;
 
     // Insertar keys del nodo derecho al nodo izquierdo
     for(auto key : right->keys){
@@ -335,6 +336,7 @@ void BplusTree::mergeNodes(Node* left, Node* right){
 
     if(!left->isLeaf){
         for(auto node : right->children){
+            node->parent = left;
             left->children.push_back(node);
         }
     }
@@ -344,8 +346,15 @@ void BplusTree::mergeNodes(Node* left, Node* right){
 
     if(left->parent == root && root->keys.size() == 1){
         root = left;
+        
+        if((int)left->keys.size() < (int)left->children.size() - 1){
+            insertHelper(left->keys, left->parent->keys.front());
+        }
+
         delete left->parent;
         left->parent = nullptr;
+        delete right;
+        return true;
     }
     else{
         int idx = 0;
@@ -355,10 +364,10 @@ void BplusTree::mergeNodes(Node* left, Node* right){
 
         left->parent->keys.erase(left->parent->keys.begin() + idx - 1);
         left->parent->children.erase(left->parent->children.begin() + idx);
-    }
 
-    // Eliminar nodo derecho
-    delete right;
+        delete right;
+    }
+    return false;
 }
 
 void BplusTree::arreglar(Node* node){
@@ -381,6 +390,7 @@ void BplusTree::arreglar(Node* node){
                 node->parent->keys[idx-1] = sibling.node->keys.back();
                 sibling.node->keys.pop_back();
                 node->children.insert(node->children.begin(), sibling.node->children.back());
+                node->children.front()->parent = node;
                 sibling.node->keys.pop_back();
             }
 
@@ -388,7 +398,8 @@ void BplusTree::arreglar(Node* node){
                 node->keys.insert(node->keys.begin(), node->parent->keys[idx+1]);
                 node->parent->keys[idx+1] = sibling.node->keys.front();
                 sibling.node->keys.erase(sibling.node->keys.begin());
-                node->children.insert(node->children.begin(), sibling.node->children.front());
+                node->children.push_back(sibling.node->children.front());
+                node->children.back()->parent = node;
                 sibling.node->children.erase(sibling.node->children.begin());
             }
 
@@ -397,22 +408,50 @@ void BplusTree::arreglar(Node* node){
 
         // No puede prestar, hacer merge de los nodos
         else{
-            if(sibling.direction == RIGHT) mergeNodes(node, sibling.node);
-            else{
-                mergeNodes(sibling.node, node);
+            bool flag;
+            if(sibling.direction == LEFT){
+                flag = mergeNodes(sibling.node, node);
+                node = sibling.node;
             }
+
+            else flag = mergeNodes(node, sibling.node);
+
+            if(flag) return;
         }
 
-        // Llamada recursiva hasta que termine de arreglar
+        if(node == root) return;
+        if(node->keys.size() >= minKeys) return;
+
         arreglar(node->parent);
     }
 }
 
-void BplusTree::deleteInternal(keyDir dir){
-    auto cursor = dir.node->children[dir.idx];
+void BplusTree::deleteInternal(int key){
 
-    while(cursor->isLeaf == false) cursor = cursor->children.front();
-    dir.node->keys[dir.idx] = cursor->keys.front();
+    auto cursor = root;
+    int i;
+    bool flagFound = false;
+
+    while(cursor && cursor->isLeaf == false){
+
+        for(i = 0 ; i < cursor->keys.size() ; ++i){
+            if(key < cursor->keys[i]) break;
+
+            else if(key == cursor->keys[i]){
+                flagFound = true;
+                break;
+            }
+        }
+
+        if(flagFound) break;
+        cursor = cursor->children[i];
+    }
+
+    if(flagFound){
+        auto update = cursor->children[i+1];
+        while(!update->isLeaf) update = update->children.front();
+        cursor->keys[i] = update->keys.front();
+    }
 }
 
 keyDir BplusTree::findSibling(Node* node){
@@ -432,7 +471,7 @@ keyDir BplusTree::findSibling(Node* node){
         sibling = node->parent->children[idx+1];
         dir = RIGHT;
 
-        if(node->parent->children[idx+1]->keys.size() >= minKeys){
+        if(sibling->keys.size() > minKeys){
             siblingIdx = 0;
         }
     }
@@ -440,7 +479,7 @@ keyDir BplusTree::findSibling(Node* node){
     else if(idx == node->parent->children.size() - 1){
         sibling = node->parent->children[idx-1];
 
-        if(node->parent->children[idx-1]->keys.size() >= minKeys){
+        if(sibling->keys.size() > minKeys){
             siblingIdx = sibling->keys.size() - 1;
         }
     }
@@ -448,11 +487,11 @@ keyDir BplusTree::findSibling(Node* node){
     else{
         sibling = node->parent->children[idx-1];
 
-        if(node->parent->children[idx-1]->keys.size() >= minKeys){
+        if(sibling->keys.size() > minKeys){
             siblingIdx = sibling->keys.size() - 1;
         }
 
-        else if(node->parent->children[idx+1]->keys.size() >= minKeys){
+        else if(node->parent->children[idx+1]->keys.size() > minKeys){
             sibling = node->parent->children[idx+1];
             dir = RIGHT;
             siblingIdx = 0;
